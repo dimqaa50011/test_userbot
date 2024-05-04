@@ -3,6 +3,8 @@
 *.py[cod]
 *$py.class
 
+**/postgres_volume
+
 # C extensions
 *.so
 # **/versions/

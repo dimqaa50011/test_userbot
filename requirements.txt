@@ -1,0 +1,6 @@
+SQLAlchemy==2.0.29
+asyncpg==0.29.0
+alembic==1.13.1
+Pyrogram==2.0.106
+python-dotenv==1.0.1
+loguru==0.7.2

@@ -5,8 +5,8 @@ from tkinter import dialog
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, DateTime, String, Time, Text, Table, Column, ForeignKey
 
-from src.db_api.models.tg_user import TgUser
-
+from .bot import Bot
+from .tg_user import TgUser
 from .session import BaseModel, Base
 
 
@@ -53,5 +53,7 @@ class Dialog(BaseModel):
     __tablename__ = "dialog"
 
     title: Mapped[str] = mapped_column(String(20))
-    messages: Mapped[list[Message]] = relationship()
-    users: Mapped[list[TgUser]] = relationship()
+    messages: Mapped[list[Message]] = relationship(lazy="joined")
+    users: Mapped[list[TgUser]] = relationship(lazy="joined")
+    bot_id: Mapped[int] = mapped_column(ForeignKey("bot.id"))
+    bot: Mapped[Bot] = relationship(lazy="joined")

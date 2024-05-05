@@ -1,3 +1,4 @@
+from email import message
 from typing import Any, Type
 
 from loguru import logger
@@ -8,6 +9,7 @@ from sqlalchemy import select, update, delete
 from .models.session import BaseModel
 from .models.tg_user import TgUser
 from .models.dialog import Dialog, Message, Event
+from .models import sqlalchemy_session
 
 
 class BaseCrud:
@@ -66,5 +68,12 @@ class EventCrud(BaseCrud):
     model = Event
 
 
-class MEssageCrud(BaseCrud):
+class MessageCrud(BaseCrud):
     model = Message
+
+
+class CrudSet:
+    tg_user = TgUserCrud(sqlalchemy_session)
+    event = EventCrud(sqlalchemy_session)
+    message = MessageCrud(sqlalchemy_session)
+    dialog = DialogCrud(sqlalchemy_session)

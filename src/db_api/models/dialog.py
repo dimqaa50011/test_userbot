@@ -1,9 +1,11 @@
 from datetime import datetime, timedelta, time
 from enum import Enum
+from optparse import Option
 from tkinter import dialog
+from typing import Optional
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import BigInteger, DateTime, String, Time, Text, Table, Column, ForeignKey
+from sqlalchemy import Integer, DateTime, String, Time, Text, Table, Column, ForeignKey
 
 from .bot import Bot
 from .tg_user import TgUser
@@ -35,14 +37,17 @@ class Event(BaseModel):
     __tablename__ = "event"
 
     name: Mapped[str] = mapped_column(String(10))
+    message_trigger_id: Mapped[Optional[int]
+                               ] = mapped_column(ForeignKey("message.id"))
+    message_trigger: Mapped[Optional["Message"]] = relationship(lazy="joined")
 
 
 class Message(BaseModel):
     __tablename__ = "message"
 
     title: Mapped[str] = mapped_column(String(10))
-    dispatch_time: Mapped[time] = mapped_column(Time)
-    events: Mapped[list[Event]] = relationship(secondary=event_message_table)
+    dispatch_time: Mapped[int] = mapped_column(Integer)
+    events: Mapped[Optional[list[Event]]] = relationship(lazy="joined")
     text: Mapped[str] = mapped_column(Text)
     trigger: Mapped[str] = mapped_column(
         String(10), nullable=True, default=None)
@@ -53,7 +58,8 @@ class Dialog(BaseModel):
     __tablename__ = "dialog"
 
     title: Mapped[str] = mapped_column(String(20))
-    messages: Mapped[list[Message]] = relationship(lazy="joined")
-    users: Mapped[list[TgUser]] = relationship(lazy="joined")
+    messages: Mapped[Optional[list[Message]]] = relationship(lazy="joined")
+    users: Mapped[Optional[list[TgUser]]] = relationship(
+        lazy="joined", secondary=user_dialog_table, backref="dialogs")
     bot_id: Mapped[int] = mapped_column(ForeignKey("bot.id"))
     bot: Mapped[Bot] = relationship(lazy="joined")

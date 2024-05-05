@@ -22,6 +22,7 @@ class PollingWorker:
     async def start_polling(self, dialog: Dialog):
         while True:
             messages = dialog.messages
+            users = dialog.users
 
             for message in messages:
                 ...

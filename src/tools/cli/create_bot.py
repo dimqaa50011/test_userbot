@@ -38,7 +38,7 @@ def add_bot():
         workdir=str(str(workdir))
     )
 
-    asyncio.run(_save(phone, str(workdir / f"{phone}.session"), new_client))
+    return asyncio.run(_save(phone, str(workdir / f"{phone}.session"), new_client))
 
 
 if __name__ == "__main__":

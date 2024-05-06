@@ -1,6 +1,7 @@
 import asyncio
 from dataclasses import dataclass
 from datetime import datetime
+from typing import Optional
 
 from loguru import logger
 from pyrogram import Client, compose
@@ -13,6 +14,7 @@ from src.db_api.crud import CrudSet
 from src.db_api.models.tg_user import TgUser, UserStatus
 from src.controllers.user_controller import UserController
 from src.db_api.models import sqlalchemy_session
+from src.tools.filters.message import message_filter
 
 
 @dataclass(init=True)
@@ -30,9 +32,15 @@ class Application:
         self._user_controller = UserController()
         self._pending_tasks = {}
         self._delay_db_polling = 1
+        self._dialog_cancel_triggers = [
+            r"(?<=\s)[Пп]рекрасно(?=\s)",
+            r"(?<=\s)[Оо]жидать(?=\s)"
+        ]
+        self._polling_is_start = False
 
     async def start(self):
         self._loop = asyncio.get_event_loop()
+        self._polling_is_start = True
         dialogs: list[Dialog] = await self._crud.dialog.get({}, many=True)
         clients = []
         try:
@@ -47,9 +55,16 @@ class Application:
         finally:
             await sqlalchemy_session.close_all()
 
-    async def _background_task(self, user: TgUser, client: Client, sleep: int, text: str, next_message_id: int, is_last: bool):
+    def _get_pattern(self, text: str):
+        return r"(?<=\s)%s(?=\s)" % (text)
+
+    async def _background_task(self, user: TgUser, client: Client, sleep: int, text: str, next_message_id: int, is_last: bool, trigger: Optional[str] = None):
         logger.info(f"Init BG task; user_id: {user.id}")
         logger.info(f"Before exited: {self._pending_tasks}")
+        if trigger and message_filter(text, [self._get_pattern(trigger)]):
+            await self._set_next_message(user, next_message_id, is_last)
+            return
+
         await asyncio.sleep(float(sleep))
         try:
             # text = user.user_state.next_message.text
@@ -72,15 +87,18 @@ class Application:
                 }
             )
         finally:
-            if is_last:
-                await self._crud.tg_user.update(
-                    {
-                        "status": UserStatus.FINISHED.value
-                    },
-                    {
-                        "id": user.id
-                    }
-                )
+            await self._set_next_message(user, next_message_id, is_last)
+
+    async def _set_next_message(self, user: TgUser, next_message_id: int, is_last: bool):
+        if is_last:
+            await self._crud.tg_user.update(
+                {
+                    "status": UserStatus.FINISHED.value
+                },
+                {
+                    "id": user.id
+                }
+            )
 
             await self._crud.user_state.update(
                 {
@@ -94,7 +112,8 @@ class Application:
 
     async def _db_polling(self, dialog: Dialog, client: Client):
         logger.info(f"Init polling! Dialog: {dialog.id}")
-        while True:
+
+        while self._polling_is_start:
             logger.info(f"Start polling! dialog: {dialog.id}")
             users: list[TgUser] = await self._crud.tg_user.get(
                 {
@@ -106,6 +125,10 @@ class Application:
             # u.user for _u in message.user_states if _u.user.status == UserStatus.ALIVE.value
             for index, message in enumerate(messages):
                 logger.info(f"Message: {message.id}")
+
+                if message_filter(message.text, self._dialog_cancel_triggers):
+                    self._polling_is_start = False
+                    break
 
                 for user in users:
                     if user.user_state.next_message_id == message.id:

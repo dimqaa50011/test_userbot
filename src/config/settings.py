@@ -8,6 +8,7 @@ from .bot_config import BotConfig
 
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+BOT_SESSION_DIR = BASE_DIR / "sess"
 
 env_path = BASE_DIR / ".env"
 

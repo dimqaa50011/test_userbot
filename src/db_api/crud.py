@@ -1,5 +1,5 @@
 from email import message
-from typing import Any, Type
+from typing import Any, Optional, Sequence, Type
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import select, update, delete, and_
 
 from src.db_api.models.bot import Bot
+from src.db_api.models.state import UserState
 
 from .models.session import BaseModel
 from .models.tg_user import TgUser
@@ -30,18 +31,20 @@ class BaseCrud:
 
         return new_item
 
-    async def get(self, filter: dict[str, Any], many: bool = False) -> BaseModel | list[BaseModel]:
-        stmt = select(self.model).where(and_(*self._get_params(filter)))
-        func_name = "scalar"
-        if many:
-            func_name = "sclars"
+    async def get(self, filter: Optional[dict[str, Any]] = None, many: bool = False) -> BaseModel | None | Sequence[BaseModel]:
+        stmt = select(self.model)
+        if filter:
+            stmt = stmt.where(and_(*self._get_params(filter)))
 
-        func = getattr(self._session, func_name)
-        return await func(stmt)
+        stmt = stmt.order_by("created")
+        result = await self._session.scalars(stmt)
+        if many:
+            return result.unique().all()
+        return result.first()
 
     async def update(self, update_data: dict[str, Any], filter: dict[str, Any]):
         stmt = update(self.model).where(
-            **self._get_params(filter)).values(**update_data)
+            *self._get_params(filter)).values(update_data)
         await self._session.execute(stmt)
         await self._session.commit()
 
@@ -79,9 +82,14 @@ class BotCrud(BaseCrud):
     model = Bot
 
 
+class UserStateCrud(BaseCrud):
+    model = UserState
+
+
 class CrudSet:
     tg_user = TgUserCrud(sqlalchemy_session)
     event = EventCrud(sqlalchemy_session)
     message = MessageCrud(sqlalchemy_session)
     dialog = DialogCrud(sqlalchemy_session)
     bot = BotCrud(sqlalchemy_session)
+    user_state = UserStateCrud(sqlalchemy_session)

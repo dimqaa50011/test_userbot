@@ -1,7 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy import BigInteger, DateTime, ForeignKey, String
 
 from .session import BaseModel
@@ -27,3 +27,5 @@ class TgUser(BaseModel):
         String(64), nullable=True, default=None)
     username: Mapped[str] = mapped_column(
         String(64), nullable=True, default=None, unique=True)
+    user_state: Mapped["UserState"] = relationship(
+        back_populates="user", lazy="joined")

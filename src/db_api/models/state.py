@@ -10,6 +10,8 @@ class UserState(BaseModel):
     __tablename__ = "user_state"
 
     user_id: Mapped[int] = mapped_column(ForeignKey("tg_user.id"))
-    user: Mapped[TgUser] = relationship(lazy="joined", backref="user_state")
+    user: Mapped[TgUser] = relationship(
+        lazy="joined", back_populates="user_state")
     next_message_id: Mapped[int] = mapped_column(ForeignKey("message.id"))
-    next_message: Mapped[Message] = relationship()
+    next_message: Mapped[Message] = relationship(
+        lazy="joined", back_populates="user_states")

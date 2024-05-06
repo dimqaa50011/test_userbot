@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pyrogram import Client
 
-from src.config import app_config, BASE_DIR
+from src.config import app_config, BASE_DIR, BOT_SESSION_DIR
 from src.db_api.crud import BotCrud
 from src.db_api.models.session import Session
 
@@ -25,20 +25,19 @@ def add_bot():
         )
 
         await sqlalchemy_session.close()
-        # await client.stop()
+        await client.stop()
         return res
 
-    workdir = BASE_DIR / "sessions"
     phone = input("Enter phone: ").strip()
     new_client = Client(
-        name=phone,
+        name=f"bot_{phone}",
         phone_number=phone,
         api_id=app_config.bot.API_ID,
         api_hash=app_config.bot.API_HASH,
-        workdir=str(str(workdir))
+        workdir=str(BOT_SESSION_DIR)
     )
 
-    return asyncio.run(_save(phone, str(workdir / f"{phone}.session"), new_client))
+    return asyncio.run(_save(phone, str(BOT_SESSION_DIR / f"bot_{phone}.session"), new_client))
 
 
 if __name__ == "__main__":

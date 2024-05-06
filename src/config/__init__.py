@@ -1,6 +1,6 @@
 from .db_config import DbConfig
 from .bot_config import BotConfig
-from .settings import AppConfig, BASE_DIR
+from .settings import AppConfig, BASE_DIR, BOT_SESSION_DIR
 
 app_config = AppConfig(
     db=DbConfig(),
@@ -13,4 +13,5 @@ __all__ = (
     "app_config",
     "BotConfig",
     "BASE_DIR",
+    "BOT_SESSION_DIR",
 )

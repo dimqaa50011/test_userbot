@@ -52,6 +52,8 @@ class Message(BaseModel):
     trigger: Mapped[str] = mapped_column(
         String(10), nullable=True, default=None)
     dialog_id: Mapped[int] = mapped_column(ForeignKey("dialog.id"))
+    user_states: Mapped[Optional[list["UserState"]]] = relationship(
+        back_populates="next_message", lazy="joined")
 
 
 class Dialog(BaseModel):

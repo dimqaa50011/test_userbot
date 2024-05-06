@@ -28,6 +28,7 @@ class BaseCrud:
             await self._session.commit()
         except IntegrityError as ex:
             logger.info(ex)
+            await self._session.rollback()
 
         return new_item
 
@@ -45,8 +46,12 @@ class BaseCrud:
     async def update(self, update_data: dict[str, Any], filter: dict[str, Any]):
         stmt = update(self.model).where(
             *self._get_params(filter)).values(update_data)
-        await self._session.execute(stmt)
-        await self._session.commit()
+        try:
+            await self._session.execute(stmt)
+            await self._session.commit()
+        except Exception as ex:
+            logger.warning(ex)
+            await self._session.rollback()
 
     async def delete(self, filter: dict[str, Any]):
         stmt = delete(self.model).where(and_(*self._get_params(filter)))

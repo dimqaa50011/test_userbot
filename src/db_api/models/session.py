@@ -9,7 +9,7 @@ from src.config.db_config import DbConfig
 
 db_conf = DbConfig()
 
-engine = create_async_engine(db_conf.get_uri(), echo=True)
+engine = create_async_engine(db_conf.get_uri(), echo=False)
 Session = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 

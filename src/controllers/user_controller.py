@@ -51,9 +51,7 @@ class UserController:
                     "user_id": new_user.id,
                     "user": new_user,
                     "next_message_id": first_message.id,
-                    "next_message": first_message,
                     "created": datetime.now(),
                     "updated_at": datetime.now()
                 }
             )
-        print()

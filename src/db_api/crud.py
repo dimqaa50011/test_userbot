@@ -1,9 +1,10 @@
-from email import message
+import asyncio
+from datetime import datetime
 from typing import Any, Optional, Sequence, Type
 
 from loguru import logger
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, InvalidRequestError
 from sqlalchemy import select, update, delete, and_
 
 from src.db_api.models.bot import Bot
@@ -12,7 +13,7 @@ from src.db_api.models.state import UserState
 from .models.session import BaseModel
 from .models.tg_user import TgUser
 from .models.dialog import Dialog, Message, Event
-from .models import sqlalchemy_session
+from .models import PoolDbConnection
 
 
 class BaseCrud:
@@ -38,20 +39,31 @@ class BaseCrud:
             stmt = stmt.where(and_(*self._get_params(filter)))
 
         stmt = stmt.order_by("created")
-        result = await self._session.scalars(stmt)
+        while True:
+            try:
+                result = await self._session.scalars(stmt)
+                break
+            except InvalidRequestError as e:
+                logger.warning(e)
+                await asyncio.sleep(1)
+
         if many:
             return result.unique().all()
         return result.first()
 
     async def update(self, update_data: dict[str, Any], filter: dict[str, Any]):
+        update_data["updated_at"] = datetime.now()
         stmt = update(self.model).where(
             *self._get_params(filter)).values(update_data)
-        try:
-            await self._session.execute(stmt)
-            await self._session.commit()
-        except Exception as ex:
-            logger.warning(ex)
-            await self._session.rollback()
+
+        while True:
+            try:
+                await self._session.execute(stmt)
+                await self._session.commit()
+                break
+            except InvalidRequestError as e:
+                logger.warning(e)
+                await asyncio.sleep(2)
 
     async def delete(self, filter: dict[str, Any]):
         stmt = delete(self.model).where(and_(*self._get_params(filter)))
@@ -69,6 +81,11 @@ class BaseCrud:
 
 class TgUserCrud(BaseCrud):
     model = TgUser
+
+    async def update(self, update_data: dict[str, Any], filter: dict[str, Any]):
+        if update_data.get("status"):
+            update_data["status_updated_at"] = datetime.now()
+        return await super().update(update_data, filter)
 
 
 class DialogCrud(BaseCrud):
@@ -92,9 +109,9 @@ class UserStateCrud(BaseCrud):
 
 
 class CrudSet:
-    tg_user = TgUserCrud(sqlalchemy_session)
-    event = EventCrud(sqlalchemy_session)
-    message = MessageCrud(sqlalchemy_session)
-    dialog = DialogCrud(sqlalchemy_session)
-    bot = BotCrud(sqlalchemy_session)
-    user_state = UserStateCrud(sqlalchemy_session)
+    tg_user = TgUserCrud(PoolDbConnection.get_connection())
+    event = EventCrud(PoolDbConnection.get_connection())
+    message = MessageCrud(PoolDbConnection.get_connection())
+    dialog = DialogCrud(PoolDbConnection.get_connection())
+    bot = BotCrud(PoolDbConnection.get_connection())
+    user_state = UserStateCrud(PoolDbConnection.get_connection())

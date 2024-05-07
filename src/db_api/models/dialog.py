@@ -1,11 +1,8 @@
-from datetime import datetime, timedelta, time
 from enum import Enum
-from optparse import Option
-from tkinter import dialog
 from typing import Optional
 
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy import Integer, DateTime, String, Time, Text, Table, Column, ForeignKey
+from sqlalchemy import Integer, String, Text, Table, Column, ForeignKey
 
 from .bot import Bot
 from .tg_user import TgUser
@@ -47,13 +44,10 @@ class Message(BaseModel):
 
     title: Mapped[str] = mapped_column(String(10))
     dispatch_time: Mapped[int] = mapped_column(Integer)
-    events: Mapped[Optional[list[Event]]] = relationship(lazy="joined")
     text: Mapped[str] = mapped_column(Text)
     trigger: Mapped[str] = mapped_column(
         String(10), nullable=True, default=None)
     dialog_id: Mapped[int] = mapped_column(ForeignKey("dialog.id"))
-    user_states: Mapped[Optional[list["UserState"]]] = relationship(
-        back_populates="next_message", lazy="joined")
 
 
 class Dialog(BaseModel):

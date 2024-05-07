@@ -10,7 +10,7 @@ from .session import BaseModel
 class UserStatus(Enum):
     ALIVE = "alive"
     DEAD = "dead"
-    FINISHED = "finifshed"
+    FINISHED = "finished"
 
 
 class TgUser(BaseModel):

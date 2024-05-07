@@ -13,6 +13,19 @@ engine = create_async_engine(db_conf.get_uri(), echo=False)
 Session = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 
+class PoolDbConnection:
+    SESSION = Session()
+
+    @classmethod
+    def get_connection(cls):
+        return cls.SESSION
+
+    @classmethod
+    async def close_all_connection(cls):
+        conn = cls.get_connection()
+        await cls.SESSION.close_all()
+
+
 class Base(DeclarativeBase):
     pass
 

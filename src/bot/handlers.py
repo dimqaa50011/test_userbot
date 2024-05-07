@@ -12,9 +12,6 @@ user_controller = UserController()
 
 
 async def new_message(client: Client, message: Message, *args, **kwargs):
-    # TODO: crate filter
-    print()
-
     new_user = await user_controller.create_user(
         UserScheme(
             first_name=message.from_user.first_name,
@@ -23,9 +20,4 @@ async def new_message(client: Client, message: Message, *args, **kwargs):
             tg_id=message.from_user.id
         ),
         client.phone_number
-    )
-
-    await client.send_message(
-        message.from_user.id,
-        "test message"
     )
